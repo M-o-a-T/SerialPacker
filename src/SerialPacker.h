@@ -7,6 +7,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <CRC16.h>
 
 //
 // Definitions: see README
@@ -25,39 +26,41 @@ typedef uint16_t SB_SIZE_T;
 typedef uint8_t SB_SIZE_T;
 #endif
 
-enum SerialEncoderState : uint8_t {
-    SE_IDLE=0,
+enum SerialPackerState : uint8_t {
+    SP_IDLE=0,
 #ifdef FRAMESTART
-    SE_LEN1,
+    SP_LEN1,
 #endif
-    SE_LEN2,
-    SE_DATA,
-    SE_CRC1,
-    SE_CRC2,
-    SE_DONE, // wait for getting data
-    SE_ERROR, // wait for idle
-}
+    SP_LEN2,
+    SP_DATA0,
+    SP_DATA,
+    SP_CRC1,
+    SP_CRC2,
+    SP_DONE, // wait for getting data
+    SP_ERROR, // wait for idle
+};
 
-class SerialEncoder : receiveCRC(),sendCRC()
+class SerialPacker
 {
 public:
+    SerialPacker() : receiveCRC(),sendCRC() {}
     typedef void (*PacketHandlerFunction)();
 
-    void begin(Stream *stream, PacketHandlerFunction onHeader, PacketHandlerFunction onPacket, uint8_t *receiveBuffer, SB_SIZE_T bufferSize, uint8_t headerSize=0)
+    void begin(Stream *stream, PacketHandlerFunction onHeader, PacketHandlerFunction onPacket, uint8_t *receiveBuf, SB_SIZE_T bufSize, uint8_t headerSize=0)
     {
         stream = stream;
         onHeaderReceived = onHeader;
         onPacketReceived = onPacket;
-        receiveBuffer = receiveBuffer;
-        receiveBufferLen = bufferSize;
-        receiveheaderSize = headerSize;
+        receiveBuffer = receiveBuf;
+        receiveBufferLen = bufSize;
+        headerLen = headerSize;
     }
 
     void checkInputStream();
 
     // start sending
-    void sendHeader(SB_SIZE_T length);
-    void sendCopy(SB_SIZE_T addLength);
+    void sendStartFrame(SB_SIZE_T length);
+    void sendStartCopy(SB_SIZE_T addLength);
 
     void sendBuffer(const uint8_t *buffer, SB_SIZE_T length);
 
@@ -72,7 +75,7 @@ public:
     }
 
     // stop sending
-    void sendFlush(bool broken=false);
+    void sendEndFrame(bool broken=false);
 
 /*    
     void debugByte(uint8_t data)
@@ -90,7 +93,7 @@ private:
 
     // receiver *****
 
-    SerialEncoderState state = SE_IDLE;
+    SerialPackerState receiveState = SP_IDLE;
     CRC16 receiveCRC;
 
     uint16_t last_ts = 0;
@@ -100,8 +103,7 @@ private:
     uint16_t frame_crc = 0;
     uint16_t frame_overrun = 0;
 
-    SB_SIZE_T receiveLen = 0;
-    uint8_t headerLen = 0;
+    SB_SIZE_T headerLen = 0;
     bool copyInput = false;
 
     //Pointer to start of receive buffer (byte array)
@@ -129,6 +131,6 @@ private:
 
     void reset()
     {
-        receiveState = SE_IDLE;
+        receiveState = SP_IDLE;
     }
 };

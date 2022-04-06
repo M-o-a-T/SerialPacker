@@ -55,7 +55,7 @@ packet.
 Call `sendByte(uint8_t data)` to send a single byte, or `sendBuffer(const
 uint8_t *buffer, SB_SIZE_T length)` to send multiple bytes.
 
-Call `sendFlush(bool broken=false)` to transmit the CRC. If `broken` is
+Call `sendEndFrame(bool broken=false)` to transmit the CRC. If `broken` is
 set, the CRC is intentionally mangled so that the next receiver will not
 treat the packet as valid.
 
@@ -73,5 +73,6 @@ need to send exactly `addLength` bytes, either immediately or in your
 
 Your `onPacket` handler is called when a message is complete. If it is
 longer than `bufferSize`, data exceeding this buffer have been discarded.
+If you called `sendCopy` earlier, you need to call `sendEndFrame()` here.
 
 

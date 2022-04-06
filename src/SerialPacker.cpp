@@ -11,14 +11,14 @@ void SerialPacker::processByte(uint8_t data)
     //debugByte(data);
 
     uint16_t ts = millis(); // ignores the high word
-    if(ts-last_ts > MAX_FRAME_DELAY && receiveState != TS_INIT) {
-        receiveState = TS_INIT;
+    if(ts-last_ts > MAX_FRAME_DELAY && receiveState != SP_IDLE) {
+        receiveState = SP_IDLE;
         frame_incomplete += 1;
     }
     switch(receiveState) {
     case SP_IDLE:
 #ifdef FRAMESTART
-        if(data != FrameStart) {
+        if(data != FRAMESTART) {
             frame_junk += 1;
             break;
         }
@@ -38,7 +38,7 @@ void SerialPacker::processByte(uint8_t data)
             receivePos = 0;
             receiveState = SP_DATA0;
         }
-        receiveCRC.restart()
+        break;
     case SP_LEN2:
         receiveLen |= data<<7;
         receiveState = SP_DATA0;
@@ -48,6 +48,7 @@ void SerialPacker::processByte(uint8_t data)
             receiveState = SP_ERROR;
             break;
         }
+        receiveCRC.restart();
         receivePos = 0;
         if(receiveLen == 0) {
             receiveState = SP_CRC1;
@@ -59,7 +60,7 @@ void SerialPacker::processByte(uint8_t data)
     case SP_DATA:
         receiveCRC.add(data);
         if(receivePos < receiveBufferLen)
-            receiveBuf[receivePos] = data;
+            receiveBuffer[receivePos] = data;
         receivePos += 1;
         if(copyInput)
             sendByte(data);
@@ -74,17 +75,17 @@ void SerialPacker::processByte(uint8_t data)
         break;
     case SP_CRC2:
         receiveCRC.add(data);
-        if(getCRC() != 0) {
+        if(receiveCRC.getCRC() != 0) {
             frame_crc += 1;
             receiveState = SP_IDLE;
             if(copyInput)
-                sendFlush(true);
+                sendEndFrame(true);
         } else {
             receiveLen = receivePos;
             if(onPacketReceived) {
                 (*onPacketReceived)();
                 if(copyInput)
-                    sendFlush(false);
+                    sendEndFrame(false);
             }
             receiveState = SP_IDLE;
         }
@@ -100,7 +101,7 @@ void SerialPacker::processByte(uint8_t data)
 // Checks stream for new bytes to arrive and processes them as needed
 void SerialPacker::checkInputStream()
 {
-    if (stream == nullptr || receiveBufferPtr == nullptr)
+    if (stream == nullptr || receiveBuffer == nullptr)
         return;
 
     while (stream->available() > 0) {
@@ -112,38 +113,14 @@ void SerialPacker::checkInputStream()
 // Sends a buffer (fixed length)
 void SerialPacker::sendBuffer(const uint8_t *buffer, SB_SIZE_T len)
 {
-    //Serial1.println();    Serial1.print("Send:");
-
-    if (_stream == nullptr || buffer == nullptr)
+    if (stream == nullptr || buffer == nullptr)
         return;
 
-    sendStartFrame();
-
-    for (size_t i = 0; i < _packetSizeBytes; i++)
-    {
-        //This is the raw byte to send
-        uint8_t v = buffer[i];
-
-        if (v == FrameStart || v == FrameEscape)
-        {
-            //We escape the byte turning 1 byte into 2 bytes :-(
-            //Serial1.print("_");
-            sendByte(FrameEscape);
-            //Strip the mask bit out - this clears the highest BIT of the byte
-            //Serial1.print("_");
-            sendByte(v & FrameMask);
-        }
-        else
-        {
-            //Send the raw byte unescaped/edited
-            sendByte(v);
-        }
-    }
-
-    //Serial1.println();
+    for (SB_SIZE_T i = 0; i < len; i++)
+        sendByte(receiveBuffer[i]);
 }
 
-void SerialPacker::sendHeader(SB_SIZE_T length)
+void SerialPacker::sendStartFrame(SB_SIZE_T length)
 {
 #ifdef FRAMESTART
     stream->write(FRAMESTART);
@@ -160,15 +137,18 @@ void SerialPacker::sendHeader(SB_SIZE_T length)
     copyInput = false;
 }
 
-void SerialPacker::sendCopy(SB_SIZE_T addLength)
+void SerialPacker::sendStartCopy(SB_SIZE_T addLength)
 {
-    SerialPacker::sendHeader(receiveLen + addLength);
-    copyInput = true;
+    SerialPacker::sendStartFrame(receiveLen + addLength);
+
+    // the receive buffer is guaranteed to contain exactly @headerLen bytes
+    // at this point.
     for(uint8_t i = 0; i < headerLen; i++)
         sendByte(receiveBuffer[i]);
+    copyInput = true;
 }
 
-void SerialPacker::sendFlush(bool broken)
+void SerialPacker::sendEndFrame(bool broken)
 {
     SB_SIZE_T length = sendLen;
     copyInput = false;
@@ -182,7 +162,7 @@ void SerialPacker::sendFlush(bool broken)
     else if(broken)
         sendCRC.add(0x02);
 
-    uint16_t crc = CRC.getCRC();
+    uint16_t crc = sendCRC.getCRC();
     stream->write(crc >> 8);
     stream->write(crc & 0xFF);
 }
