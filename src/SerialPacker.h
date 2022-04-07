@@ -62,6 +62,9 @@ public:
     }
 
     void checkInputStream();
+    bool isIdle() {
+        return receiveState == SP_IDLE;
+    }
 
     // start sending
     void sendStartFrame(SB_SIZE_T length);
