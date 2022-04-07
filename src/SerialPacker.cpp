@@ -150,7 +150,6 @@ void SerialPacker::sendStartCopy(SB_SIZE_T addLength)
     // ASSERT(!copyInput);
     // Subtract any skipped bytes from the resulting header
     SerialPacker::sendStartFrame(receiveLen + addLength - (receivePos-headerLen));
-    readLen = readLength;
 
     // the receive buffer is guaranteed to contain exactly @headerLen bytes
     // at this point.
