@@ -117,13 +117,14 @@ void SerialPacker::checkInputStream()
 }
 
 // Sends a buffer (fixed length)
-void SerialPacker::sendBuffer(const uint8_t *buffer, SB_SIZE_T len)
+void SerialPacker::sendBuffer(const void *buffer, SB_SIZE_T len)
 {
     if (stream == nullptr || buffer == nullptr)
         return;
 
+    const uint8_t *buf = (const uint8_t *)buffer;
     for (SB_SIZE_T i = 0; i < len; i++)
-        sendByte(receiveBuffer[i]);
+        sendByte(buf[i]);
 }
 
 void SerialPacker::sendStartFrame(SB_SIZE_T length)

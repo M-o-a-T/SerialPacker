@@ -71,7 +71,7 @@ public:
         readLen += readLength;
     }
 
-    void sendBuffer(const uint8_t *buffer, SB_SIZE_T length);
+    void sendBuffer(const void *buffer, SB_SIZE_T length);
 
     void sendByte(uint8_t data)
     {
