@@ -12,15 +12,19 @@
 //
 // Definitions: see README
 
-#ifndef MAX_FRAME_DELAY
-#define MAX_FRAME_DELAY 100
+#ifndef SP_MAX_FRAME_DELAY
+#define SP_MAX_FRAME_DELAY 100
 #endif
 
-#ifndef MAX_PACKET
-#define MAX_PACKET 127
+#ifndef SP_MAX_PACKET
+#define SP_MAX_PACKET 127
 #endif
 
-#if MAX_PACKET>255
+#ifndef SP_FRAME_START
+#define SP_FRAME_START 0x85
+#endif
+
+#if SP_MAX_PACKET>255
 typedef uint16_t SB_SIZE_T;
 #else
 typedef uint8_t SB_SIZE_T;
@@ -28,7 +32,7 @@ typedef uint8_t SB_SIZE_T;
 
 enum SerialPackerState : uint8_t {
     SP_IDLE=0,
-#ifdef FRAMESTART
+#if SP_FRAME_START >= 0
     SP_LEN1,
 #endif
     SP_LEN2,
@@ -61,18 +65,26 @@ public:
 
     // start sending
     void sendStartFrame(SB_SIZE_T length);
-    void sendStartCopy(SB_SIZE_T readLength, SB_SIZE_T addLength);
+    void sendStartCopy(SB_SIZE_T addLength);
+    void sendDefer(SB_SIZE_T readLength)
+    {
+        readLen += readLength;
+    }
 
     void sendBuffer(const uint8_t *buffer, SB_SIZE_T length);
 
     void sendByte(uint8_t data)
     {
         //debugByte(data);
+#ifdef SP_SENDLEN
         if(!sendLen)
             return; // oops
+#endif
         sendCRC.add(data);
         stream->write(data);
+#ifdef SP_SENDLEN
         sendLen -= 1;
+#endif
     }
 
     // stop sending
@@ -121,15 +133,17 @@ private:
 
     //Call back: headerSize bytes have been received
     PacketHandlerFunction onHeaderReceived = nullptr;
-    //Call back: readLength bytes have been received
+    //Call back: readLen bytes have been received
     PacketHandlerFunction onReadReceived = nullptr;
     //Call back: a complete message has been received
     PacketHandlerFunction onPacketReceived = nullptr;
 
     // sender *****
 
-    uint16_t sendLen = 0;
     CRC16 sendCRC;
+#ifdef SP_SENDLEN
+    SB_SIZE_T sendLen = 0;
+#endif
 
     void reset()
     {
