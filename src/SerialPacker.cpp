@@ -60,12 +60,18 @@ void SerialPacker::processByte(uint8_t data)
         if(receivePos < receiveBufferLen)
             receiveBuffer[receivePos] = data;
         receivePos += 1;
-        if(copyInput)
-            sendByte(data);
+        if(copyInput) {
+            if (readLen)
+                readLen--;
+            else
+                sendByte(data);
+        }
         if(receivePos == receiveLen)
             receiveState = SP_CRC1;
         if(receivePos == headerLen && onHeaderReceived)
             (*onHeaderReceived)();
+        else if(receivePos == headerLen+readLen && onReadReceived)
+            (*onReadReceived)();
         break;
     case SP_CRC1:
         receiveCRC.add(data);
@@ -133,9 +139,11 @@ void SerialPacker::sendStartFrame(SB_SIZE_T length)
     copyInput = false;
 }
 
-void SerialPacker::sendStartCopy(SB_SIZE_T addLength)
+void SerialPacker::sendStartCopy(SB_SIZE_T readLength, SB_SIZE_T addLength)
 {
-    SerialPacker::sendStartFrame(receiveLen + addLength);
+    // ASSERT(!copyInput);
+    SerialPacker::sendStartFrame(receiveLen + addLength - readLength);
+    readLen = readLength;
 
     // the receive buffer is guaranteed to contain exactly @headerLen bytes
     // at this point.

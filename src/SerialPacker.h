@@ -46,10 +46,11 @@ public:
     SerialPacker() : receiveCRC(),sendCRC() {}
     typedef void (*PacketHandlerFunction)();
 
-    void begin(Stream *stream, PacketHandlerFunction onHeader, PacketHandlerFunction onPacket, uint8_t *receiveBuf, SB_SIZE_T bufSize, uint8_t headerSize=0)
+    void begin(Stream *stream, PacketHandlerFunction onHeader, PacketHandlerFunction onReader, PacketHandlerFunction onPacket, uint8_t *receiveBuf, SB_SIZE_T bufSize, uint8_t headerSize=0)
     {
         stream = stream;
         onHeaderReceived = onHeader;
+        onReadReceived = onReader;
         onPacketReceived = onPacket;
         receiveBuffer = receiveBuf;
         receiveBufferLen = bufSize;
@@ -60,7 +61,7 @@ public:
 
     // start sending
     void sendStartFrame(SB_SIZE_T length);
-    void sendStartCopy(SB_SIZE_T addLength);
+    void sendStartCopy(SB_SIZE_T readLength, SB_SIZE_T addLength);
 
     void sendBuffer(const uint8_t *buffer, SB_SIZE_T length);
 
@@ -102,6 +103,7 @@ private:
     uint16_t last_ts = 0;
 
     SB_SIZE_T headerLen = 0;
+    SB_SIZE_T readLen = 0;
     bool copyInput = false;
 
     //Pointer to start of receive buffer (byte array)
@@ -119,6 +121,8 @@ private:
 
     //Call back: headerSize bytes have been received
     PacketHandlerFunction onHeaderReceived = nullptr;
+    //Call back: readLength bytes have been received
+    PacketHandlerFunction onReadReceived = nullptr;
     //Call back: a complete message has been received
     PacketHandlerFunction onPacketReceived = nullptr;
 
