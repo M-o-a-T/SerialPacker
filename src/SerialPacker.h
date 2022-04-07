@@ -89,6 +89,9 @@ public:
     }
 */
 
+    bool isCopying() {
+        return copyInput;
+    }
 private:
 
     // receiver *****
@@ -97,11 +100,6 @@ private:
     CRC16 receiveCRC;
 
     uint16_t last_ts = 0;
-
-    uint16_t frame_incomplete = 0;
-    uint16_t frame_junk = 0;
-    uint16_t frame_crc = 0;
-    uint16_t frame_overrun = 0;
 
     SB_SIZE_T headerLen = 0;
     bool copyInput = false;

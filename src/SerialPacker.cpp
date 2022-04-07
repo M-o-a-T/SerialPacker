@@ -13,13 +13,11 @@ void SerialPacker::processByte(uint8_t data)
     uint16_t ts = millis(); // ignores the high word
     if(ts-last_ts > MAX_FRAME_DELAY && receiveState != SP_IDLE) {
         receiveState = SP_IDLE;
-        frame_incomplete += 1;
     }
     switch(receiveState) {
     case SP_IDLE:
 #ifdef FRAMESTART
         if(data != FRAMESTART) {
-            frame_junk += 1;
             break;
         }
         receiveState = SP_LEN1;
@@ -76,7 +74,6 @@ void SerialPacker::processByte(uint8_t data)
     case SP_CRC2:
         receiveCRC.add(data);
         if(receiveCRC.getCRC() != 0) {
-            frame_crc += 1;
             receiveState = SP_IDLE;
             if(copyInput)
                 sendEndFrame(true);
@@ -91,7 +88,6 @@ void SerialPacker::processByte(uint8_t data)
         }
         break;
     case SP_DONE:
-        frame_overrun += 1;
         break;
     case SP_ERROR:
         break;
