@@ -108,6 +108,11 @@ public:
     bool isCopying() {
         return copyInput;
     }
+
+    SB_SIZE_T receiveCount() {
+        return receivePos;
+    }
+
 private:
 
     // receiver *****
