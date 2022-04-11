@@ -50,9 +50,9 @@ public:
     SerialPacker() : receiveCRC(),sendCRC() {}
     typedef void (*PacketHandlerFunction)();
 
-    void begin(Stream *stream, PacketHandlerFunction onHeader, PacketHandlerFunction onReader, PacketHandlerFunction onPacket, uint8_t *receiveBuf, SB_SIZE_T bufSize, uint8_t headerSize=0)
+    void begin(Stream *_stream, PacketHandlerFunction onHeader, PacketHandlerFunction onReader, PacketHandlerFunction onPacket, uint8_t *receiveBuf, SB_SIZE_T bufSize, uint8_t headerSize=0)
     {
-        stream = stream;
+        stream = _stream;
         onHeaderReceived = onHeader;
         onReadReceived = onReader;
         onPacketReceived = onPacket;
