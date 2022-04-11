@@ -1,4 +1,4 @@
-# SerialPackets
+# SerialPacker
 
 This is an Arduino library for sending and receiving variable-sized,
 CRC16-protected data packets.
