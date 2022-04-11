@@ -18,6 +18,9 @@ void SerialPacker::processByte(uint8_t data)
     case SP_IDLE:
 #if SP_FRAME_START >= 0
         if(data != SP_FRAME_START) {
+#ifdef SP_NONFRAME_STREAM
+            SP_NONFRAME_STREAM.write(data);
+#endif
             break;
         }
         receiveState = SP_LEN1;

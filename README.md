@@ -32,6 +32,10 @@ data. This adds code to pad a transmitted message automatically when you
 abort due to an error, and prevents you from adding more data than you
 should.
 
+Define `SP_NONFRAME_STREAM` if you want incoming characters that are not
+part of a frame to be forwarded to another port. Obviously, this does not
+work if `SP_FRAME_START` is not defined.
+
 Include `<SerialPacker.h>`.
 
 Create a SerialPacker instance, called SP in the rest of this document.
