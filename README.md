@@ -36,6 +36,9 @@ Define `SP_NONFRAME_STREAM` if you want incoming characters that are not
 part of a frame to be forwarded to another port. Obviously, this does not
 work if `SP_FRAME_START` is not defined.
 
+Define `SP_TRACE` to a serial stream (like `Serial1`) if you want to log a
+mostly-readable hex copy of the data you're receiving.
+
 Include `<SerialPacker.h>`.
 
 Create a SerialPacker instance, called SP in the rest of this document.
