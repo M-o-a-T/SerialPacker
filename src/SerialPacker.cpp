@@ -177,7 +177,7 @@ void SerialPacker::sendEndFrame(bool broken)
     }
     else
 #endif
-    if(broken)
+    if(br)
         sendCRC.add(0x02);
 
     uint16_t crc = sendCRC.getCRC();
