@@ -165,17 +165,15 @@ void SerialPacker::sendStartCopy(SB_SIZE_T addLength)
 
 void SerialPacker::sendEndFrame(bool broken)
 {
-#ifdef SP_SENDLEN
-    SB_SIZE_T length = sendLen;
-#endif
+    uint8_t br = broken;
     copyInput = false;
 #ifdef SP_SENDLEN
-    if(length) {
+    if(sendLen) {
         // oops
-        while(length)
+        br += 1+sendLen;
+        while(sendLen)
             sendByte(0);
         sendCRC.add(0x01); // breaks CRC
-        sendLen = 0;
     }
     else
 #endif
