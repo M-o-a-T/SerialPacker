@@ -11,9 +11,9 @@ void SerialPacker::processByte(uint8_t data)
     //debugByte(data);
 
     uint16_t ts = millis(); // ignores the high word
-    if(ts-last_ts > SP_MAX_FRAME_DELAY && receiveState != SP_IDLE) {
+    if(ts-last_ts > SP_MAX_FRAME_DELAY && receiveState != SP_IDLE)
         receiveState = SP_IDLE;
-    }
+    last_ts = ts;
     switch(receiveState) {
     case SP_IDLE:
 #if SP_FRAME_START >= 0
@@ -57,6 +57,7 @@ void SerialPacker::processByte(uint8_t data)
                 (*onHeaderReceived)();
             break;
         }
+        receiveState = SP_DATA;
         // fall thru
     case SP_DATA:
         receiveCRC.add(data);
