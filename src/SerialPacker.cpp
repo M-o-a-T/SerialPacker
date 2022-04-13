@@ -12,7 +12,12 @@ void SerialPacker::processByte(uint8_t data)
 
     uint16_t ts = millis(); // ignores the high word
     if(ts-last_ts > SP_MAX_FRAME_DELAY && receiveState != SP_IDLE)
+    {
+#ifdef SP_TRACE
+        SP_TRACE.println(" R");
+#endif
         receiveState = SP_IDLE;
+    }
     last_ts = ts;
     switch(receiveState) {
     case SP_IDLE:
@@ -24,6 +29,9 @@ void SerialPacker::processByte(uint8_t data)
             break;
         }
         receiveState = SP_LEN1;
+#ifdef SP_TRACE
+        SP_TRACE.print("\nS");
+#endif
         break;
     case SP_LEN1:
 #endif
@@ -39,6 +47,11 @@ void SerialPacker::processByte(uint8_t data)
             receiveState = SP_DATA0;
         receivePos = 0;
         readLen = 0;
+#ifdef SP_TRACE
+        SP_TRACE.write('L');
+        SP_TRACE.print(receiveLen);
+        SP_TRACE.write(' ');
+#endif
         break;
     case SP_LEN2:
         receiveLen |= data<<7;
@@ -60,6 +73,10 @@ void SerialPacker::processByte(uint8_t data)
         receiveState = SP_DATA;
         // fall thru
     case SP_DATA:
+#ifdef SP_TRACE
+        SP_TRACE.print(data,HEX);
+        SP_TRACE.write(' ');
+#endif
         receiveCRC.add(data);
         if(receivePos < receiveBufferLen)
             receiveBuffer[receivePos] = data;
@@ -88,10 +105,17 @@ void SerialPacker::processByte(uint8_t data)
     case SP_CRC2:
         receiveCRC.add(data);
         if(receiveCRC.getCRC() != 0) {
+#ifdef SP_TRACE
+            SP_TRACE.print("-");
+            SP_TRACE.println(receiveCRC.getCRC(), HEX);
+#endif
             receiveState = SP_IDLE;
             if(copyInput)
                 sendEndFrame(true);
         } else {
+#ifdef SP_TRACE
+            SP_TRACE.println("+");
+#endif
             receiveLen = receivePos;
             if(onPacketReceived != nullptr) {
                 (*onPacketReceived)();
@@ -175,7 +199,7 @@ void SerialPacker::sendEndFrame(bool broken)
     }
     else
 #endif
-    if(broken)
+    if(br)
         sendCRC.add(0x02);
 
     uint16_t crc = sendCRC.getCRC();
