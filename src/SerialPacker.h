@@ -80,14 +80,11 @@ public:
     {
         //debugByte(data);
 #ifdef SP_SENDLEN
-        if(!sendLen)
+        if(sendPos++ > sendLen)
             return; // oops
 #endif
         sendCRC.add(data);
         stream->write(data);
-#ifdef SP_SENDLEN
-        sendLen -= 1;
-#endif
     }
 
     // stop sending
@@ -150,6 +147,7 @@ private:
 
     CRC16 sendCRC;
 #ifdef SP_SENDLEN
+    SB_SIZE_T sendPos = 0;
     SB_SIZE_T sendLen = 0;
 #endif
 

@@ -166,6 +166,7 @@ void SerialPacker::sendStartFrame(SB_SIZE_T length)
     stream->write(length);
     sendCRC.restart();
 #ifdef SP_SENDLEN
+    sendPos = 0;
     sendLen = length;
 #endif
     copyInput = false;
@@ -185,25 +186,49 @@ void SerialPacker::sendStartCopy(SB_SIZE_T addLength)
     copyInput = true;
 }
 
+#if (!defined(SP_TRACE) && defined(SP_NONFRAME_STREAM))
+#define SP_TRACE SP_NONFRAME_STREAM
+#endif
+
 void SerialPacker::sendEndFrame(bool broken)
 {
     uint8_t br = broken;
     copyInput = false;
 #ifdef SP_SENDLEN
-    if(sendLen) {
+    if(sendPos < sendLen) {
         // oops
-        br += 1+sendLen;
-        while(sendLen)
+        br += 1+sendLen-sendPos;
+        while(sendPos < sendLen)
             sendByte(0);
-        sendCRC.add(0x01); // breaks CRC
     }
-    else
 #endif
-    if(br)
-        sendCRC.add(0x02);
 
-    uint16_t crc = sendCRC.getCRC();
+    uint16_t crc = sendCRC.getCRC() + br;
+#ifdef SP_SENDLEN
+    crc += (sendPos-sendLen);
+#endif
     stream->write(crc >> 8);
     stream->write(crc & 0xFF);
+
+#ifdef SP_TRACE
+    SP_TRACE.print("\nX");
+#ifdef SP_SENDLEN
+    SP_TRACE.print(sendLen);
+    if(br>1) {
+        SP_TRACE.write('-');
+        SP_TRACE.print(br-1);
+    }
+    if(sendPos>sendLen) {
+        SP_TRACE.write('-');
+        SP_TRACE.print(sendLen-sendPos);
+        crc += 10*(sendLen-sendPos);
+    }
+#endif // SENDLEN
+    if(br) {
+        SP_TRACE.print("_ERR:");
+        SP_TRACE.println(br);
+    } else
+        SP_TRACE.println("+");
+#endif // TRACE
 }
 
