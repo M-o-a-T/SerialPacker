@@ -186,10 +186,6 @@ void SerialPacker::sendStartCopy(SB_SIZE_T addLength)
     copyInput = true;
 }
 
-#if (!defined(SP_TRACE) && defined(SP_NONFRAME_STREAM))
-#define SP_TRACE SP_NONFRAME_STREAM
-#endif
-
 void SerialPacker::sendEndFrame(bool broken)
 {
     uint8_t br = broken;
