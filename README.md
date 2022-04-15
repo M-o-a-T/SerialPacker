@@ -39,6 +39,8 @@ work if `SP_FRAME_START` is not defined.
 Define `SP_TRACE` to a serial stream (like `Serial1`) if you want to log a
 mostly-readable hex copy of the data you're receiving.
 
+Define `SP_ERRCOUNT` if you want to count receiver errors.
+
 Include `<SerialPacker.h>`.
 
 Create a SerialPacker instance, called SP in the rest of this document.

@@ -59,7 +59,9 @@ public:
         receiveBuffer = receiveBuf;
         receiveBufferLen = bufSize;
         headerLen = headerSize;
+#ifdef SP_ERRCOUNT
         clearErrors();
+#endif
     }
 
     void checkInputStream();
@@ -111,6 +113,7 @@ public:
         return receivePos;
     }
 
+#ifdef SP_ERRCOUNT
     uint16_t errCRC = 0;
     uint16_t errTimeout = 0;
 
@@ -118,6 +121,7 @@ public:
         errCRC = 0;
         errTimeout = 0;
     }
+#endif
 
 private:
 

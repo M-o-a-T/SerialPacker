@@ -17,7 +17,9 @@ void SerialPacker::processByte(uint8_t data)
         SP_TRACE.println(" R");
 #endif
         receiveState = SP_IDLE;
+#ifdef SP_ERRCOUNT
         errTimeout += 1;
+#endif
     }
     last_ts = ts;
     switch(receiveState) {
@@ -111,8 +113,10 @@ void SerialPacker::processByte(uint8_t data)
                 SP_TRACE.print("-");
                 SP_TRACE.println(receiveCRC.getCRC(), HEX);
     #endif
+#ifdef SP_ERRCOUNT
                 if (crc != 1)
                     errCRC += 1;
+#endif
                 receiveState = SP_IDLE;
                 if(copyInput)
                     sendEndFrame(true);
