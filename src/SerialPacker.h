@@ -7,7 +7,6 @@
 #pragma once
 
 #include <Arduino.h>
-#include <CRC16.h>
 
 //
 // Definitions: see README
@@ -47,7 +46,7 @@ enum SerialPackerState : uint8_t {
 class SerialPacker
 {
 public:
-    SerialPacker() : receiveCRC(),sendCRC() {}
+    SerialPacker() {}
     typedef void (*PacketHandlerFunction)();
 
     void begin(Stream *_stream, PacketHandlerFunction onHeader, PacketHandlerFunction onReader, PacketHandlerFunction onPacket, uint8_t *receiveBuf, SB_SIZE_T bufSize, uint8_t headerSize=0)
@@ -78,17 +77,7 @@ public:
     }
 
     void sendBuffer(const void *buffer, SB_SIZE_T length);
-
-    void sendByte(uint8_t data)
-    {
-        //debugByte(data);
-#ifdef SP_SENDLEN
-        if(sendPos++ > sendLen)
-            return; // oops
-#endif
-        sendCRC.add(data);
-        stream->write(data);
-    }
+    void sendByte(uint8_t data);
 
     // stop sending
     void sendEndFrame(bool broken=false);
@@ -123,12 +112,14 @@ public:
     }
 #endif
 
+    static uint16_t crc16_update(uint16_t crc, uint8_t byte);
+    static uint16_t crc16_buffer(uint8_t data[], uint16_t length);
 private:
 
     // receiver *****
 
     SerialPackerState receiveState = SP_IDLE;
-    CRC16 receiveCRC;
+    uint16_t receiveCRC;
 
     uint16_t last_ts = 0;
 
@@ -159,7 +150,7 @@ private:
 
     // sender *****
 
-    CRC16 sendCRC;
+    uint16_t sendCRC;
 #ifdef SP_SENDLEN
     SB_SIZE_T sendPos = 0;
     SB_SIZE_T sendLen = 0;

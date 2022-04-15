@@ -39,6 +39,10 @@ work if `SP_FRAME_START` is not defined.
 Define `SP_TRACE` to a serial stream (like `Serial1`) if you want to log a
 mostly-readable hex copy of the data you're receiving.
 
+Define `SP_CRC` to some suitable 16-bit polynomial. The default is 0xBAAD.
+If you do use a different polynomial you need to patch the source to
+include the appropriate lookup table.
+
 Define `SP_ERRCOUNT` if you want to count receiver errors.
 
 Include `<SerialPacker.h>`.
