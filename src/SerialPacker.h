@@ -59,6 +59,7 @@ public:
         receiveBuffer = receiveBuf;
         receiveBufferLen = bufSize;
         headerLen = headerSize;
+        clearErrors();
     }
 
     void checkInputStream();
@@ -110,6 +111,14 @@ public:
         return receivePos;
     }
 
+    uint16_t errCRC = 0;
+    uint16_t errTimeout = 0;
+
+    inline void clearErrors() {
+        errCRC = 0;
+        errTimeout = 0;
+    }
+
 private:
 
     // receiver *****
@@ -122,6 +131,7 @@ private:
     SB_SIZE_T headerLen = 0;
     SB_SIZE_T readLen = 0;
     bool copyInput = false;
+    bool crcHi;
 
     //Pointer to start of receive buffer (byte array)
     uint8_t *receiveBuffer = nullptr;

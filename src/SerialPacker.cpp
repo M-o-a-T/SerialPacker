@@ -17,6 +17,7 @@ void SerialPacker::processByte(uint8_t data)
         SP_TRACE.println(" R");
 #endif
         receiveState = SP_IDLE;
+        errTimeout += 1;
     }
     last_ts = ts;
     switch(receiveState) {
@@ -99,30 +100,34 @@ void SerialPacker::processByte(uint8_t data)
         }
         break;
     case SP_CRC1:
-        receiveCRC.add(data);
+        crcHi = data;
         receiveState = SP_CRC2;
         break;
     case SP_CRC2:
-        receiveCRC.add(data);
-        if(receiveCRC.getCRC() != 0) {
-#ifdef SP_TRACE
-            SP_TRACE.print("-");
-            SP_TRACE.println(receiveCRC.getCRC(), HEX);
-#endif
-            receiveState = SP_IDLE;
-            if(copyInput)
-                sendEndFrame(true);
-        } else {
-#ifdef SP_TRACE
-            SP_TRACE.println("+");
-#endif
-            receiveLen = receivePos;
-            if(onPacketReceived != nullptr) {
-                (*onPacketReceived)();
+        {
+            uint16_t crc = ((crcHi<<8) | data) ^ receiveCRC.getCRC();
+            if(crc != 0) {
+    #ifdef SP_TRACE
+                SP_TRACE.print("-");
+                SP_TRACE.println(receiveCRC.getCRC(), HEX);
+    #endif
+                if (crc != 1)
+                    errCRC += 1;
+                receiveState = SP_IDLE;
                 if(copyInput)
-                    sendEndFrame(false);
+                    sendEndFrame(true);
+            } else {
+    #ifdef SP_TRACE
+                SP_TRACE.println("+");
+    #endif
+                receiveLen = receivePos;
+                if(onPacketReceived != nullptr) {
+                    (*onPacketReceived)();
+                    if(copyInput)
+                        sendEndFrame(false);
+                }
+                receiveState = SP_IDLE;
             }
-            receiveState = SP_IDLE;
         }
         break;
     case SP_DONE:
@@ -191,18 +196,17 @@ void SerialPacker::sendEndFrame(bool broken)
     uint8_t br = broken;
     copyInput = false;
 #ifdef SP_SENDLEN
-    if(sendPos < sendLen) {
+    if(sendPos != sendLen) {
         // oops
-        br += 1+sendLen-sendPos;
+        br = 1;
         while(sendPos < sendLen)
             sendByte(0);
     }
 #endif
 
-    uint16_t crc = sendCRC.getCRC() + br;
-#ifdef SP_SENDLEN
-    crc += (sendPos-sendLen);
-#endif
+    uint16_t crc = sendCRC.getCRC();
+    if(br)
+        crc ^= 1;
     stream->write(crc >> 8);
     stream->write(crc & 0xFF);
 
@@ -217,7 +221,6 @@ void SerialPacker::sendEndFrame(bool broken)
     if(sendPos>sendLen) {
         SP_TRACE.write('-');
         SP_TRACE.print(sendLen-sendPos);
-        crc += 10*(sendLen-sendPos);
     }
 #endif // SENDLEN
     if(br) {
