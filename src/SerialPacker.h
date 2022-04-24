@@ -68,6 +68,13 @@ public:
         return receiveState == SP_IDLE;
     }
 
+#if SP_FRAME_START >= 0
+    void wokeUp() {
+        if(isIdle())
+            receiveState = SP_LEN1;
+    }
+#endif
+
     // start sending
     void sendStartFrame(SB_SIZE_T length);
     void sendStartCopy(SB_SIZE_T addLength);

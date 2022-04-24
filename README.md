@@ -135,6 +135,17 @@ which.
 The master should wait `SP_MAX_FRAME_DELAY` milliseconds between messages,
 plus the time required for transmitting the data added by modules.
 
+## Deep Sleep
+
+In some applications, microcontrollers go to "deep sleep" with disabled
+oscillators. However, serial communication is difficult when you don't have
+a clock.
+
+In this situation it's helpful to set the frame start to `0xFF` and to
+hook an interrupt to the rising edge of the serial line (i.e. the end of
+the start bit). The interrupt shall disable itself, re-enable the serial
+receiver, and call the `wokeUp()` method.
+
 # Usage example
 
 Check [this fork of the diyBMS code](https://github.com/M-o-a-T/diyBMS-code).
