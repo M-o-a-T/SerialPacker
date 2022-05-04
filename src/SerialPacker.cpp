@@ -73,6 +73,12 @@ void SerialPacker::processByte(uint8_t data)
         break;
     case SP_LEN1:
 #endif
+        if (data == 0x00) {
+            // A zero-length packet doesn't make sense; it's most likely a
+            // BREAK.
+            reset();
+            break;
+        }
 #if SP_MAX_PACKET>255
         receiveLen = data&0x7F;
         if(data & 0x80)
