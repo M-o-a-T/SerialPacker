@@ -1,16 +1,69 @@
 # SerialPacker
 
-This is an Arduino library for sending and receiving variable-sized,
-CRC16-protected data packets.
+This is an Arduino and Python library for sending and receiving
+variable-sized, CRC16-protected data packets.
 
-It is optimized for daisy-chaining multiple
-modules onto an ad-hoc bus, i.e. each member of the chain immediately
-forwards the data to the next device without actually storing it. This
-reduces RAM usage and speeds up processing.
+It is optimized for daisy-chaining multiple modules onto an ad-hoc bus,
+i.e. each member of the chain forwards the data it receives to the next
+device as quickly as possible, i.e. without waiting for the end of the
+packet and without requiring RAM for the whole thing. This reduces RAM
+usage and speeds up processing, particularly if your string is long.
 
 Originally based on code by Stuart Pittaway.
 
 ## Usage
+
+### Python
+
+As the Python code is intended for the "master" node, it does not use
+callbacks and does not support assembling or forwarding messages on the
+fly.
+
+The module exports a `SerialPacker` class which you can instantiate with
+the following arguments:
+
+* max\_idle: Milliseconds between intra-packet bytes. Default: 10 ms.
+
+* crc: CRC generator class. Default: CRC16/0xBAAD.
+
+* max\_packet: maximum packet length. Default: 127.
+
+* frame\_start: frame start byte. The default is 0x85. `None` skips
+  framing entirely.
+
+#### CRC
+
+The CRC class must be callable with an empty initializer.
+
+Objects have the following attributes:
+
+* feed(byte): add a byte to the CRC.
+
+* crc: the accumulated CRC.
+
+* len: the number of bytes to transmit.
+
+#### Sending
+
+The method `frame(data)` returns a head/tail tuple. Transmit the head
+bytes, the data, and the tail bytes.
+
+#### Receiving
+
+Send all incoming bytes to `feed(byte)`. This method returns a complete
+message when it is complete and its CRC matches.
+
+#### Console data
+
+If you set `frame_start` to a non-`None` value, incoming non-frame data
+are accumulated in an internal buffer. You should periodically call
+`read()` to zero and return it.
+
+If the buffer ends with an incomplete UTF-8 character, it will not be
+returned until `max_idle` milliseconds have passed since the last call to
+`feed`.
+
+### Arduino / C++
 
 Define `SP_FRAME_START` to a byte that shall introduce a new packet.
 Until that byte is seen, any other data will be ignored.
@@ -54,7 +107,7 @@ Set up your serial (or other) data stream.
 Call `SP.begin(stream, header_handler, read_handler, packet_handler,
 recv_buffer, recv_size, header_size)`, where
 
-* `stream` is obviously your data stream,
+* `stream` is your data stream (obviously),
 
 * `header_handler` is a function that's called when `header_size` bytes
   have been read.
@@ -70,7 +123,7 @@ recv_buffer, recv_size, header_size)`, where
 
 Periodically call `SP.checkInputStream()`.
 
-### Sending packet data
+#### Sending packet data
 
 Call `sendStartFrame(SB_SIZE_T length)` to start transmitting a
 packet.
@@ -85,7 +138,7 @@ treat the packet as valid.
 Sending more than the indicated number of bytes is not possible; they are
 silently ignored.
 
-### Receiving packet data
+#### Receiving packet data
 
 Periodically call `SP.checkInputStream()`.
 
@@ -93,7 +146,7 @@ Your `onPacket` handler is called when a message is complete. If it is
 longer than `bufferSize`, data exceeding this buffer have been discarded.
 If you called `sendCopy` earlier, you need to call `sendEndFrame()` here.
 
-### Replying / Forwarding packet data
+#### Replying / Forwarding packet data
 
 From within your `onHeader` handler, call `sendCopy(addLength)`. This sends
 the header and the rest of the message onwards.
@@ -110,7 +163,7 @@ If you decide that the frame should be invalidated, send filler bytes to
 fulfill your `addLength` promise, then call `sendEndFrame(true)`. This
 transmits an invalid CRC. If you do not do this 
 
-## Error handling
+### Error handling
 
 You should defer acting on the message's data until your `onPacket` handler
 runs. It will only be called when the message's CRC is correct.
@@ -135,7 +188,7 @@ which.
 The master should wait `SP_MAX_FRAME_DELAY` milliseconds between messages,
 plus the time required for transmitting the data added by modules.
 
-## Deep Sleep
+### Deep Sleep
 
 In some applications, microcontrollers go to "deep sleep" with disabled
 oscillators. However, serial communication is difficult when you don't have
