@@ -4,11 +4,11 @@ try:
 except AttributeError:
     def ticks_ms():
         return time.clock_gettime_ns(time.CLOCK_MONOTONIC_RAW) / 1000000
-    def tick_diff(a,b):
+    def ticks_diff(a,b):
         return a-b
 else:
     ticks_ms = time.ticks_ms
-    tick_diff = time.tick_diff
+    ticks_diff = time.ticks_diff
 
 class CRC16:
     # polynomial: 0xBAAD
@@ -37,7 +37,7 @@ class SerialPacker:
     err_frame = 0  # length wrong or timeout
 
     def __init__(self, max_idle=10, max_packet=127, frame_start=0x85, crc=CRC16):
-        self.nbuf=bytearray() # non-framed
+        self.nbuf = bytearray() # non-framed
 
         self.max_packet = max_packet
         self.max_idle = max_idle
@@ -58,14 +58,14 @@ class SerialPacker:
         if self.state == 0 and self.pos > 0 and not self.is_idle():
             return b""
         b = self.nbuf
-        self.nbuf = b""
+        self.nbuf = bytearray()
         return b
 
     def is_idle(self):
         if self.s == 0:
             return True
         t=ticks_ms()
-        if tick_diff(t,self.last) < self.max_idle:
+        if ticks_diff(t,self.last) < self.max_idle:
             return False
         self.err_frame += 1
         self.reset()
@@ -78,7 +78,7 @@ class SerialPacker:
     def feed(self,byte):
         # return a packet if one has been completed
         t=ticks_ms()
-        if tick_diff(t,self.last) >= self.max_idle:
+        if ticks_diff(t,self.last) >= self.max_idle:
             self.err_frame += 1
             self.reset()
         self.last = t
@@ -157,7 +157,7 @@ class SerialPacker:
         # return head and tail data for the packet
         ld = len(data)
         if ld > self.max_packet:
-            raise ValueError("max len %d" % (self.max_packet,))
+            raise ValueError(f"max len {self.max_packet}")
         crc = self._crc()
         for b in data:
             crc.feed(b)
