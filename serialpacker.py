@@ -1,7 +1,8 @@
-import time
 try:
-    time.ticks_ms
-except AttributeError:
+    import utime as time
+except ImportError:
+    import time
+
     def ticks_ms():
         return time.clock_gettime_ns(time.CLOCK_MONOTONIC_RAW) / 1000000
     def ticks_diff(a,b):
