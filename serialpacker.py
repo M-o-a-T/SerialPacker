@@ -38,8 +38,6 @@ class SerialPacker:
     err_frame = 0  # length wrong or timeout
 
     def __init__(self, max_idle=10, max_packet=127, frame_start=0x85, crc=CRC16):
-        self.nbuf = bytearray() # non-framed
-
         self.max_packet = max_packet
         self.max_idle = max_idle
         self.frame_start = frame_start
@@ -52,15 +50,6 @@ class SerialPacker:
         self.buf = None
         self.state = 1 if self.frame_start is None else 0
         self.pos = 0
-        # intentionally does not clear nbuf
-
-    def read(self):
-        # return the accumulated buffer of non-packetized data
-        if self.state == 0 and self.pos > 0 and not self.is_idle():
-            return b""
-        b = self.nbuf
-        self.nbuf = bytearray()
-        return b
 
     def is_idle(self):
         if self.s == 0:
@@ -77,7 +66,8 @@ class SerialPacker:
         self.s = 1
 
     def feed(self,byte):
-        # return a packet if one has been completed
+        # returns a packet if one has been completed
+        # returns a byte if it's not part of a packet
         t=ticks_ms()
         if ticks_diff(t,self.last) >= self.max_idle:
             self.err_frame += 1
@@ -87,9 +77,9 @@ class SerialPacker:
         s=self.state
         if s==0: # idle
             if self.pos > 0:
-                self.nbuf.append(byte)
                 self.pos -= 1
-            if byte == self.frame_start:
+                return byte
+            elif byte == self.frame_start:
                 s=1
             else:
                 if byte >= 0xC0:
@@ -101,7 +91,7 @@ class SerialPacker:
                         n += 1
                         c >>= 1
                     self.pos = 6-n
-                self.nbuf.append(byte)
+                return byte
 
         elif s == 1: # len1
             if byte == 0: # zero length = error (break?)

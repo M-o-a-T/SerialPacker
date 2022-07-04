@@ -51,7 +51,8 @@ bytes, the data, and the tail bytes.
 #### Receiving
 
 Send all incoming bytes to `feed(byte)`. This method returns a complete
-message when it is complete and its CRC matches.
+message when it is complete and its CRC matches. Otherwise, if the byte is
+not part of a message, it is returned as-is.
 
 #### Console data
 
