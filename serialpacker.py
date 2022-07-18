@@ -37,7 +37,7 @@ class SerialPacker:
     err_crc = 0  # CRC wrong
     err_frame = 0  # length wrong or timeout
 
-    def __init__(self, max_idle=10, max_packet=127, frame_start=0x85, crc=CRC16):
+    def __init__(self, max_idle=100, max_packet=127, frame_start=0x85, crc=CRC16):
         self.max_packet = max_packet
         self.max_idle = max_idle
         self.frame_start = frame_start
