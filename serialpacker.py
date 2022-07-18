@@ -152,11 +152,13 @@ class SerialPacker:
         crc = self._crc()
         for b in data:
             crc.feed(b)
-        h = b"" if self.frame_start is None else bytes((self.frame_start,))
+        h = bytearray()
+        if self.frame_start is not None:
+            h.append(self.frame_start)
         if self.max_packet>255 and ld>127:
-            h += bytes(((ld&0x7f)|0x80,ld>>7))
+            h.extend(((ld&0x7f)|0x80,ld>>7))
         else:
-            h += bytes((ld,))
+            h.append(ld)
         t = bytes((crc.crc>>8, crc.crc&0xFF))
         return h,t
 
