@@ -42,6 +42,7 @@ class SerialPacker:
         self.max_idle = max_idle
         self.frame_start = frame_start
         self.mark = mark
+        self.mark_seen = False
         self._crc = crc
         self.reset()
 
@@ -76,6 +77,17 @@ class SerialPacker:
         self.last = t
 
         s=self.state
+
+        if self.mark is None:
+            pass
+        elif self.mark_seen:
+            self.mark_seen = False
+        elif byte == self.mark:
+            self.mark_seen = True
+            return
+        else:
+            return b
+
         if s==0: # idle
             if self.pos > 0:
                 self.pos -= 1
@@ -163,5 +175,13 @@ class SerialPacker:
         t = bytes((crc.crc>>8, crc.crc&0xFF))
 
         # TODO add mark
+        def itermark(data):
+            for b in data:
+                yield self.mark
+                yield b
+        if self.mark is not None:
+            h = bytes(itermark(h))
+            data = bytes(itermark(data))
+            t = bytes(itermark(t))
         return h,data,t
 
