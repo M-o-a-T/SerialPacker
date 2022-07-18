@@ -85,7 +85,7 @@ class SerialPacker:
                 if byte >= 0xC0:
                     # UTF-8 lead-in character. Skip 0x10xxxxxx bytes so
                     # an accidental start byte is not misrecognized.
-                    c ^= 0xff
+                    c = byte ^ 0xff
                     n = 0
                     while c:
                         n += 1
