@@ -37,7 +37,7 @@ class SerialPacker:
     err_crc = 0  # CRC wrong
     err_frame = 0  # length wrong or timeout
 
-    def __init__(self, max_idle=10, max_packet=127, frame_start=0x85, crc=CRC16, mark=None):
+    def __init__(self, max_idle=100, max_packet=127, frame_start=0x85, crc=CRC16, mark=None):
         self.max_packet = max_packet
         self.max_idle = max_idle
         self.frame_start = frame_start
@@ -86,7 +86,7 @@ class SerialPacker:
                 if byte >= 0xC0:
                     # UTF-8 lead-in character. Skip 0x10xxxxxx bytes so
                     # an accidental start byte is not misrecognized.
-                    c ^= 0xff
+                    c = byte ^ 0xff
                     n = 0
                     while c:
                         n += 1
@@ -153,11 +153,13 @@ class SerialPacker:
         crc = self._crc()
         for b in data:
             crc.feed(b)
-        h = b"" if self.frame_start is None else bytes((self.frame_start,))
+        h = bytearray()
+        if self.frame_start is not None:
+            h.append(self.frame_start)
         if self.max_packet>255 and ld>127:
-            h += bytes(((ld&0x7f)|0x80,ld>>7))
+            h.extend(((ld&0x7f)|0x80,ld>>7))
         else:
-            h += bytes((ld,))
+            h.append(ld)
         t = bytes((crc.crc>>8, crc.crc&0xFF))
 
         # TODO add mark
