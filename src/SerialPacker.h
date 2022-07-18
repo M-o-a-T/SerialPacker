@@ -126,6 +126,10 @@ private:
     // receiver *****
 
     SerialPackerState receiveState = SP_IDLE;
+#ifdef SP_MARK
+    bool receiveMark = false;
+#endif
+
     uint16_t receiveCRC;
 
     uint16_t last_ts = 0;

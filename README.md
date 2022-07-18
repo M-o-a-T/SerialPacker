@@ -86,6 +86,12 @@ data. This adds code to pad a transmitted message automatically when you
 abort due to an error, and prevents you from adding more data than you
 should.
 
+Define `SP_MARK` to a byte that's prefixed to every transmitted byte.
+Also, received bytes are only considered part of a packet when they're
+prefixed with that byte. This is useful if some embedded thing needs to
+print debug information *while* sending a packet. We recommend `0x10`
+("DLE").
+
 Define `SP_NONFRAME_STREAM` if you want incoming characters that are not
 part of a frame to be forwarded to another port. Obviously, this does not
 work if `SP_FRAME_START` is not defined.
