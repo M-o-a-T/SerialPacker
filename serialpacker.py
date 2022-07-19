@@ -86,7 +86,7 @@ class SerialPacker:
             self.mark_seen = True
             return
         else:
-            return b
+            return byte
 
         if s==0: # idle
             if self.pos > 0:
