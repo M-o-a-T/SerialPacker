@@ -4,11 +4,11 @@ try:
 except AttributeError:
     def ticks_ms():
         return time.clock_gettime_ns(time.CLOCK_MONOTONIC_RAW) / 1000000
-    def tick_diff(a,b):
+    def ticks_diff(a,b):
         return a-b
 else:
     ticks_ms = time.ticks_ms
-    tick_diff = time.tick_diff
+    ticks_diff = time.ticks_diff
 
 class CRC16:
     # polynomial: 0xBAAD
@@ -65,7 +65,7 @@ class SerialPacker:
         if self.s == 0:
             return True
         t=ticks_ms()
-        if tick_diff(t,self.last) < self.max_idle:
+        if ticks_diff(t,self.last) < self.max_idle:
             return False
         self.err_frame += 1
         self.reset()
@@ -78,7 +78,7 @@ class SerialPacker:
     def feed(self,byte):
         # return a packet if one has been completed
         t=ticks_ms()
-        if tick_diff(t,self.last) >= self.max_idle:
+        if ticks_diff(t,self.last) >= self.max_idle:
             self.err_frame += 1
             self.reset()
         self.last = t
