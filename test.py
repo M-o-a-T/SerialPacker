@@ -1,9 +1,13 @@
+"""
+Rudimentary serialpacker test
+"""
 import sys
 
 from serialpacker import SerialPacker as S
 
 
 def test():
+    """rudimentary test"""
     a = S(max_idle=9999999999, max_packet=300)
 
     hello = (" ".join(sys.argv[1:]) or "HiThere").encode("utf-8")

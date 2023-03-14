@@ -19,10 +19,11 @@ try:
 except AttributeError:
     # CPython
     def ticks_ms():
+        """System ticks, in msec"""
         return time.clock_gettime_ns(time.CLOCK_MONOTONIC_RAW) / 1000000
 
     def ticks_diff(a, b):
-        # The monotomic clock doesn't wrap, thus simply subtract
+        """Difference between ticks, non-wrapping"""
         return a - b
 
 else:
@@ -69,6 +70,7 @@ class CRC16:
         self.crc = 0
 
     def feed(self, byte):
+        """add a byte to the CRC"""
         crc = self.crc
         crc = self.table[((byte >> 4) ^ crc) & 0xF] ^ (crc >> 4)
         crc = self.table[(byte ^ crc) & 0xF] ^ (crc >> 4)
@@ -167,7 +169,7 @@ class SerialPacker:
                 if byte >= 0xC0:
                     # UTF-8 lead-in character. Skip 0x10xxxxxx bytes so
                     # an accidental start byte is not misrecognized.
-                    c ^= 0xFF
+                    c = byte ^ 0xFF
                     n = 0
                     while c:
                         n += 1
@@ -179,14 +181,14 @@ class SerialPacker:
             if byte == 0:  # zero length = error (break?)
                 self.err_frame += 1
                 self.reset()
-                return
+                return None
             self.len = byte
             if self.max_packet > 255 and (byte & 0x80):  # possibly a two byte packet
                 s = 2
             elif byte > self.max_packet:
                 self.err_frame += 1
                 self.reset()
-                return
+                return None
             else:
                 s = 3
                 self.buf = bytearray(self.len)
@@ -197,7 +199,7 @@ class SerialPacker:
             if self.len > self.max_packet:
                 self.err_frame += 1
                 self.reset()
-                return
+                return None
 
             s = 3
             self.buf = bytearray(self.len)
@@ -225,6 +227,7 @@ class SerialPacker:
                 return rbuf
 
         self.state = s
+        return None
 
     def frame(self, data):
         """
