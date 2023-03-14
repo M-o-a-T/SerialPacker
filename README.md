@@ -51,7 +51,8 @@ bytes, the data, and the tail bytes.
 #### Receiving
 
 Send all incoming bytes to `feed(byte)`. This method returns a complete
-message when it is complete and its CRC matches.
+message when it is complete and its CRC matches. Otherwise, if the byte is
+not part of a message, it is returned as-is.
 
 #### Console data
 
@@ -84,6 +85,12 @@ Define `SP_SENDLEN` if you want to track the length of the transmitted
 data. This adds code to pad a transmitted message automatically when you
 abort due to an error, and prevents you from adding more data than you
 should.
+
+Define `SP_MARK` to a byte that's prefixed to every transmitted byte.
+Also, received bytes are only considered part of a packet when they're
+prefixed with that byte. This is useful if some embedded thing needs to
+print debug information *while* sending a packet. We recommend `0x10`
+("DLE").
 
 Define `SP_NONFRAME_STREAM` if you want incoming characters that are not
 part of a frame to be forwarded to another port. Obviously, this does not

@@ -11,8 +11,8 @@ def test():
     a = S(max_idle=9999999999, max_packet=300)
 
     hello = (" ".join(sys.argv[1:]) or "HiThere").encode("utf-8")
-    h, t = a.frame(hello)
-    data = h + hello + t
+    h, data, t = a.frame(hello)
+    data = h + data + t
     if len(data) > 15:
         print(len(hello), data[:5], "…", data[-5:])
     else:

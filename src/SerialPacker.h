@@ -126,6 +126,10 @@ private:
     // receiver *****
 
     SerialPackerState receiveState = SP_IDLE;
+#ifdef SP_MARK
+    bool receiveMark = false;
+#endif
+
     uint16_t receiveCRC;
 
     uint16_t last_ts = 0;
@@ -133,7 +137,7 @@ private:
     SB_SIZE_T headerLen = 0;
     SB_SIZE_T readLen = 0;
     bool copyInput = false;
-    bool crcHi;
+    uint8_t crcHi;
 
     //Pointer to start of receive buffer (byte array)
     uint8_t *receiveBuffer = nullptr;

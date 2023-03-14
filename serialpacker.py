@@ -10,14 +10,15 @@ maximum, in order to keep packets small yet not restrict size too much.
 A C implementation of this scheme is also available. The C version supports
 streaming; this Python implementation does not.
 """
-import time
 
 __all__ = ["FRAME_START", "SerialPacker", "CRC16"]
 
 try:
-    time.ticks_ms
-except AttributeError:
+    import utime as time
+except ImportError:
     # CPython
+    import time
+
     def ticks_ms():
         """System ticks, in msec"""
         return time.clock_gettime_ns(time.CLOCK_MONOTONIC_RAW) / 1000000
@@ -97,12 +98,14 @@ class SerialPacker:
     err_crc = 0  # CRC wrong
     err_frame = 0  # length wrong or timeout
 
-    def __init__(self, max_idle=10, max_packet=127, frame_start=FRAME_START, crc=CRC16):
-        self.nbuf = bytearray()  # non-framed
-
+    def __init__(
+        self, max_idle=100, max_packet=127, frame_start=FRAME_START, crc=CRC16, mark=None
+    ):
         self.max_packet = max_packet
         self.max_idle = max_idle
         self.frame_start = frame_start
+        self.mark = mark
+        self.mark_seen = False
         self._crc = crc
         self.reset()
 
@@ -114,16 +117,6 @@ class SerialPacker:
         self.state = 1 if self.frame_start is None else 0
         self.pos = 0
         # intentionally does not clear nbuf
-
-    def read(self):
-        """
-        Returns the accumulated buffer of non-packetized data
-        """
-        if self.state == 0 and self.pos > 0 and not self.is_idle():
-            return b""
-        b = self.nbuf
-        self.nbuf = b""
-        return b
 
     def is_idle(self):
         """
@@ -159,11 +152,22 @@ class SerialPacker:
         self.last = t
 
         s = self.state
+
+        if self.mark is None:
+            pass
+        elif self.mark_seen:
+            self.mark_seen = False
+        elif byte == self.mark:
+            self.mark_seen = True
+            return None
+        else:
+            return byte
+
         if s == 0:  # idle
             if self.pos > 0:
-                self.nbuf.append(byte)
                 self.pos -= 1
-            if byte == self.frame_start:
+                return byte
+            elif byte == self.frame_start:
                 s = 1
             else:
                 if byte >= 0xC0:
@@ -175,7 +179,7 @@ class SerialPacker:
                         n += 1
                         c >>= 1
                     self.pos = 6 - n
-                self.nbuf.append(byte)
+                return byte
 
         elif s == 1:  # len1
             if byte == 0:  # zero length = error (break?)
@@ -234,18 +238,32 @@ class SerialPacker:
         Build framing for a message.
 
         Returns:
-            a tuple with head (start byte, length) and tail (CRC) data.
+            a triple with head (start byte, length), bytes (possibly
+            mark-ed), and tail (CRC) data.
         """
         ld = len(data)
         if ld > self.max_packet:
-            raise ValueError("max len %d" % (self.max_packet,))
+            raise ValueError(f"max len {self.max_packet}")
         crc = self._crc()
         for b in data:
             crc.feed(b)
-        h = b"" if self.frame_start is None else bytes((self.frame_start,))
+        h = bytearray()
+        if self.frame_start is not None:
+            h.append(self.frame_start)
         if self.max_packet > 255 and ld > 127:
-            h += bytes(((ld & 0x7F) | 0x80, ld >> 7))
+            h.extend(((ld & 0x7F) | 0x80, ld >> 7))
         else:
-            h += bytes((ld,))
+            h.append(ld)
         t = bytes((crc.crc >> 8, crc.crc & 0xFF))
-        return h, t
+
+        if self.mark is not None:
+
+            def itermark(data):
+                for b in data:
+                    yield self.mark
+                    yield b
+
+            h = bytes(itermark(h))
+            data = bytes(itermark(data))
+            t = bytes(itermark(t))
+        return h, data, t
