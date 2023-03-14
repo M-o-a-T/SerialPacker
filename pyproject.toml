@@ -50,7 +50,7 @@ deps =
 
 
 [tool.setuptools]
-modules = ["serialpacker.py"]
+py-modules = ["serialpacker"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml"]
