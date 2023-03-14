@@ -10,6 +10,8 @@ else:
     ticks_ms = time.ticks_ms
     ticks_diff = time.ticks_diff
 
+FRAME_START=0x85
+
 class CRC16:
     # polynomial: 0xBAAD
     # 
@@ -36,7 +38,7 @@ class SerialPacker:
     err_crc = 0  # CRC wrong
     err_frame = 0  # length wrong or timeout
 
-    def __init__(self, max_idle=10, max_packet=127, frame_start=0x85, crc=CRC16):
+    def __init__(self, max_idle=10, max_packet=127, frame_start=FRAME_START, crc=CRC16):
         self.nbuf=bytearray() # non-framed
 
         self.max_packet = max_packet
