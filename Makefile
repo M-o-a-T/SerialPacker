@@ -28,8 +28,6 @@ untagged:
 pypi:   tagged
 	if test -f dist/${PACKAGE}-$(shell git describe --tags --exact-match).tar.gz ; then \
 			echo "Source package exists."; \
-	elif test -f setup.py ; then \
-			python3 setup.py sdist bdist_wheel ; \
 	else \
 			python3 -mbuild -snw ; \
 	fi
