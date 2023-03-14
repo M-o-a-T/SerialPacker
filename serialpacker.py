@@ -1,24 +1,47 @@
+"""
+This module implements a simple framing scheme for serially-transmitted
+data. Frames use an optional fixed start byte, a intra-frame time maximum
+to protect against data loss, and a CRC16 (polynomial 0xBAAD, optimal for
+small-ish frames with a large number of bit errors).
+
+The length is transmitted as one or two characters, depending on its
+maximum, in order to keep packets small yet not restrict size too much.
+
+A C implementation of this scheme is also available. The C version supports
+streaming; this Python implementation does not.
+"""
 import time
+
+__all__ = ["FRAME_START", "SerialPacker", "CRC16"]
+
 try:
     time.ticks_ms
 except AttributeError:
+    # CPython
     def ticks_ms():
         return time.clock_gettime_ns(time.CLOCK_MONOTONIC_RAW) / 1000000
     def ticks_diff(a,b):
+        # The monotomic clock doesn't wrap, thus simply subtract
         return a-b
 else:
+    # MicroPython
     ticks_ms = time.ticks_ms
     ticks_diff = time.ticks_diff
 
 FRAME_START=0x85
 
 class CRC16:
-    # polynomial: 0xBAAD
-    # 
+    """
+    A simple CRC routine.
+
+    Polynomial: 0xBAAD, no inversion or similar tricks
+    """
     # cd moat-bus/python/moatbus
     # python3 ./crc.py -b16 -p0xBAAD -d4
     len = 2
 
+    # Use a nibble-based table; it's fast enough, but doesn't need a
+    # kbyte of memory (MicroPython doesn't have arrays).
     table = [
         0x0000, 0x64a8, 0xc950, 0xadf8,
         0xe7fb, 0x8353, 0x2eab, 0x4a03,
@@ -35,6 +58,22 @@ class CRC16:
         self.crc = crc
 
 class SerialPacker:
+    """
+    Frame sender and receiver.
+
+    Args:
+      max_idle:
+        max milliseconds between bytes within a frame.
+      max_packet:
+        maximum packet size. Size is always transmitted as a single byte if 
+        max_packet is <256, otherwise two bytes are used whenever the actual
+        size is >127.
+      frame_start: start byte, or None for solely relying on inter-frame timeout.
+      crc:
+        CRC method to use. The default is our CRC16 with 0xBAAD polynomial.
+    """
+
+    # error counters
     err_crc = 0  # CRC wrong
     err_frame = 0  # length wrong or timeout
 
@@ -48,6 +87,7 @@ class SerialPacker:
         self.reset()
 
     def reset(self):
+        """Reset the packet receiver."""
         self.crc = self._crc()
         self.last = ticks_ms()
         self.buf = None
@@ -56,7 +96,9 @@ class SerialPacker:
         # intentionally does not clear nbuf
 
     def read(self):
-        # return the accumulated buffer of non-packetized data
+        """
+        Returns the accumulated buffer of non-packetized data
+        """
         if self.state == 0 and self.pos > 0 and not self.is_idle():
             return b""
         b = self.nbuf
@@ -64,6 +106,9 @@ class SerialPacker:
         return b
 
     def is_idle(self):
+        """
+        Test whether we're currently receiving a frame.
+        """
         if self.s == 0:
             return True
         t=ticks_ms()
@@ -74,11 +119,19 @@ class SerialPacker:
         return True
 
     def wakeup(self):
+        """
+        Utility method to start a frame without a start byte. Useful if the
+        first byte is used as a wake-from-sleep signal.
+        """
         self.reset()
         self.s = 1
 
     def feed(self,byte):
-        # return a packet if one has been completed
+        """
+        Receiver for a single byte.
+
+        Returns: a packet, if this byte completed its reception.
+        """
         t=ticks_ms()
         if ticks_diff(t,self.last) >= self.max_idle:
             self.err_frame += 1
@@ -156,7 +209,12 @@ class SerialPacker:
         self.state=s
 
     def frame(self,data):
-        # return head and tail data for the packet
+        """
+        Build framing for a message.
+
+        Returns:
+            a tuple with head (start byte, length) and tail (CRC) data.
+        """
         ld = len(data)
         if ld > self.max_packet:
             raise ValueError("max len %d" % (self.max_packet,))
