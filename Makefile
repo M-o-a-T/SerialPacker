@@ -1,11 +1,11 @@
 #!/usr/bin/make -f
 
-PACKAGE = moat-micro-lib-serialpacker
+PACKAGE = serialpacker
 MAKEINCL ?= $(shell python3 -mmoat src path)/make/py
 
 ifneq ($(wildcard $(MAKEINCL)),)
 include $(MAKEINCL)
-# availabe via http://github.com/smurfix/sourcemgr
+# availabe via http://github.com/M-o-a-T/moat-src
 
 else
 %:
