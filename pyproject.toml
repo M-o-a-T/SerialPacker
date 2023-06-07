@@ -55,7 +55,7 @@ deps =
 
 [tool.setuptools]
 py-modules = ["serialpacker"]
-packages = ["moat.micro.lib.serialpacker","moat.lib.serialpacker"]
+packages = ["serialpacker"]
 
 [tool.setuptools.package-data]
 "*" = ["*.yaml"]
