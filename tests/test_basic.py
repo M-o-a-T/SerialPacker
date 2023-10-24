@@ -2,7 +2,7 @@
 Empty test file
 """
 
-import moat.lib.serialpacker  # pylint: disable=unused-import
+import moat.lib.serialpacker  # noqa:F401 pylint: disable=unused-import
 
 def test_nothing():
     """
