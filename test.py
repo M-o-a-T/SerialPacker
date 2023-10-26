@@ -1,6 +1,8 @@
 """
 Rudimentary serialpacker test
 """
+from __future__ import annotations
+
 import sys
 
 from serialpacker import SerialPacker as S
