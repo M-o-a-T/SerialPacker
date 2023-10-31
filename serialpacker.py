@@ -100,7 +100,12 @@ class SerialPacker:
     err_frame = 0  # length wrong or timeout
 
     def __init__(
-        self, max_idle=100, max_packet=127, frame_start=FRAME_START, crc=CRC16, mark=None,
+        self,
+        max_idle=100,
+        max_packet=127,
+        frame_start=FRAME_START,
+        crc=CRC16,
+        mark=None,
     ):
         self.max_packet = max_packet
         self.max_idle = max_idle

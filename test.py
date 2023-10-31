@@ -27,7 +27,7 @@ def test():
         if x is None:
             raise RuntimeError("returned None %d" % (j,))
         if x != hello:
-            raise RuntimeError("returned %r instead of %r" % (x, hello))
+            raise RuntimeError(f"returned {x !r} instead of {hello !r}")
 
 
 if __name__ == "__main__":
