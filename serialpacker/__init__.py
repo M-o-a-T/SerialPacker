@@ -10,6 +10,7 @@ maximum, in order to keep packets small yet not restrict size too much.
 A C implementation of this scheme is also available. The C version supports
 streaming; this Python implementation does not.
 """
+from __future__ import annotations
 
 __all__ = ["FRAME_START", "SerialPacker", "CRC16"]
 
@@ -48,7 +49,7 @@ class CRC16:
 
     # Use a nibble-based table; it's fast enough, but doesn't need a
     # kbyte of memory (MicroPython doesn't have arrays).
-    table = [
+    table = (
         0x0000,
         0x64A8,
         0xC950,
@@ -65,7 +66,7 @@ class CRC16:
         0x39FE,
         0x9406,
         0xF0AE,
-    ]
+    )
 
     def __init__(self):
         self.crc = 0
@@ -99,7 +100,12 @@ class SerialPacker:
     err_frame = 0  # length wrong or timeout
 
     def __init__(
-        self, max_idle=100, max_packet=127, frame_start=FRAME_START, crc=CRC16, mark=None
+        self,
+        max_idle=100,
+        max_packet=127,
+        frame_start=FRAME_START,
+        crc=CRC16,
+        mark=None,
     ):
         self.max_packet = max_packet
         self.max_idle = max_idle
