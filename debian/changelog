@@ -1,4 +1,4 @@
-moat-micro-lib-serialpacker (0.10.3-1) unstable; urgency=medium
+serialpacker (0.10.4-1) unstable; urgency=medium
 
   * Initial Debianization.
 
