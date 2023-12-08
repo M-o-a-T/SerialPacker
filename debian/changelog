@@ -1,0 +1,5 @@
+moat-micro-lib-serialpacker (0.10.3-1) unstable; urgency=medium
+
+  * Initial Debianization.
+
+ -- Matthias Urlichs <matthias@urlichs.de>  Fri, 08 Dec 2023 09:52:19 +0100
