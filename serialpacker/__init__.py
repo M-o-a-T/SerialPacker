@@ -10,6 +10,7 @@ maximum, in order to keep packets small yet not restrict size too much.
 A C implementation of this scheme is also available. The C version supports
 streaming; this Python implementation does not.
 """
+
 from __future__ import annotations
 
 __all__ = ["FRAME_START", "SerialPacker", "CRC16"]
